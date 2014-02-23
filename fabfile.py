@@ -26,9 +26,10 @@ def auth_host():
 	env.hosts=['']
 	env.user='root'
 
+hosts should be single quoted and comma seperated
 def xen_servers():
 	env.user='root'
-	env.hosts=['10.160.2.22', '10.160.2.20']
+	env.hosts=['']
 
 # never store pass in text will get later from prompt
 ops_pass=''
