@@ -21,7 +21,7 @@ env.user='ops'
 def all_internal_servers():
 	env.hosts=['']
 
-# centeral config server
+# centeral config/ldap server
 def auth_host():
 	env.hosts=['']
 	env.user='root'
@@ -43,14 +43,14 @@ def pingHost(ip):
 	response = os.system("ping -c 1 " + ip)
 	if response == 0:
 #		ping is sucess, machine is live
-		print "there is a live host on this ip address"
+		print 'there is a live host on this ip address'
 		confirm = raw_input('confirm you wish to proceed [y/n]: ')
 #		retatard proof script (force user to confirm changes)
 		while confirm != 'y':
 			confirm = raw_input('confirm you wish to proceed [y/n]: ')
 			print "confirm: ", confirm
 	else:
-		print "there is no live host on this ip address"
+		print 'there is no live host on this ip address'
 
 
 # will configure existing servers with ldap client packages/files to authenticate
@@ -58,7 +58,7 @@ def ldapClientConfig():
 #	installs neccessary packages
 	sudo('DEBCONF_FRONTEND="noninteractive" apt-get install -y libpam-ldap libnss-ldap nss-updatedb libnss-db')
 #	rsync the config files from auth
-	sudo('rsync -arvP root@CHANGE_THIS_SERVER_NAME_IP:/home/ops/shared-etc/ldap-client-files/etc/ /etc/')
+	sudo('rsync -arvP root@' + auth_host + ':/home/ops/shared-etc/ldap-client-files/etc/ /etc/')
 
 # configures internal server for static IP and dns
 # should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
@@ -69,12 +69,12 @@ def configEth0(server_ip):
 	oldIP = run('ifconfig eth0 | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 	run('whoami')
 #	rsync the template file
-	sudo('rsync -arvP root@CHANGE_THIS_SERVER_NAME_IP:/home/ops/shared-etc/network/interfaces /etc/network/interfaces')
+	sudo('rsync -arvP root@' + auth_hosts + ':/home/ops/shared-etc/network/interfaces /etc/network/interfaces')
 #	check if host is alive
 	print 'pinging ',server_ip
 	pingHost(server_ip)
 #	sed to replace IP
-	sudo('sed -i "s|CHANGE_THIS_SERVER_NAME_IP|' + server_ip + '|g"'' /etc/network/interfaces')
+	sudo('sed -i "s|' + auth_host + '|' + server_ip + '|g"'' /etc/network/interfaces')
 	run('cat /etc/network/interfaces')
 	confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
 #	fail count
@@ -84,7 +84,7 @@ def configEth0(server_ip):
 		fail_count += 1
 		new_ip=raw_input('You fool! your fail count is currently ' + str(fail_count) + '. Input desired ip or I shall taunt you again: ')
 #		running sed with new IP
-		sudo('sed -i "s|CHANGE_THIS_SERVER_NAME_IP|' + new_ip + '|g"'' /etc/network/interfaces')
+		sudo('sed -i "s|' + auth_host + '|' + new_ip + '|g"'' /etc/network/interfaces')
 		run('cat /etc/network/interfaces')
 #		confirm working?
 		confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
@@ -129,7 +129,7 @@ def syncUserKeys(user_id):
 	if not exists('/home/'+ user_id + '/.ssh'):
 		run('echo need to create homedir')
 #		rsync the homedir ignoring host keys
-		run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" CHANGE_THIS_SERVER_NAME_IP:~/ /home/' + user_id + '/')
+		run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ' + auth_host + ':~/ /home/' + user_id + '/')
 	else:
 #		already exists
 		run('echo homedir and ssh already set up')
@@ -141,7 +141,7 @@ def syncRootKeys():
 	env.user='root'
 	run('whoami')
 # rsyncs roots ssh keys from auth
-	run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" root@CHANGE_THIS_SERVER_NAME_IP:~/.ssh/ ~/.ssh/')
+	run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" root@' + auth_host + ':~/.ssh/ ~/.ssh/')
 
 
 # deletes any local instance of ops user
@@ -158,7 +158,7 @@ def delLocalAdmin():
 		print 'these are not the droids you are looking for, move along...'
 
 
-# pushes keys from ops@CHANGE_THIS_SERVER_NAME_IP to each machine
+# pushes keys from ops@auth_host to each machine
 def syncOpsKeys():
 	run('whoami')
 #	confirm that homedir and ssh do not exist
@@ -168,7 +168,7 @@ def syncOpsKeys():
 	else:
 		print 'these are not the droids you are looking for, move along...'
 #	rsync the .ssh dir / Ignores host keys
-	sudo('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ops@CHANGE_THIS_SERVER_NAME_IP:/home/ops/.ssh/ /home/ops/.ssh/')
+	sudo('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ops@' + auth_host + ':/home/ops/.ssh/ /home/ops/.ssh/')
 #	ensuring that perms/ownership is correct
 	sudo('chown -R ops:ops /home/ops')
 	sudo('chmod 700 /home/ops/.ssh/')
@@ -256,7 +256,7 @@ def getListOfVMs():
 	list_of_uuid = run('awk -F":" \'{ print $2 }\' list-vms-backup.txt > list-vm-uuids-backup.txt')
 	list_of_names = run('awk -F":" \'{ print $1 }\' list-vms-backup.txt > list-vm-names-backup.txt')
 #	list_of_names = run('awk -F":" \'{ print $1 }\' list-vms-backup.txt | tr -d [:blank:] > list-vm-names-backup.txt')
-	run('rsync -arvP list-*.* root@CHANGE_THIS_SERVER_NAME_IP:/xs-backup-lists/' + xs + '/' )
+	run('rsync -arvP list-*.* root@' + auth_host + ':/xs-backup-lists/' + xs + '/' )
 
 
 # function to back uo a single VM
