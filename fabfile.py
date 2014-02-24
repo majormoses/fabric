@@ -256,7 +256,7 @@ def getListOfVMs():
 	list_of_uuid = run('awk -F":" \'{ print $2 }\' list-vms-backup.txt > list-vm-uuids-backup.txt')
 	list_of_names = run('awk -F":" \'{ print $1 }\' list-vms-backup.txt > list-vm-names-backup.txt')
 #	list_of_names = run('awk -F":" \'{ print $1 }\' list-vms-backup.txt | tr -d [:blank:] > list-vm-names-backup.txt')
-	run('rsync -arvP list-*.* root@10.160.2.100:/xs-backup-lists/' + xs + '/' )
+	run('rsync -arvP list-*.* root@CHANGE_THIS_SERVER_NAME_IP:/xs-backup-lists/' + xs + '/' )
 
 
 # function to back uo a single VM
