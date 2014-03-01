@@ -17,4 +17,5 @@ When running interactively and in directory you cloned/downloaded to you can run
 This should output should contain the list of functions you can run via fabric and will look simialr to:
 
 
-To run a function with options try something like: fab -H HOSTNAME/IP/HOST-DEF(defined in fabfile)  configEth0:server_ip='IP/YOU/WISH/TO/CHANGE/TO'
+To run a function with options try something like: 
+fab -H HOSTNAME/IP/HOST-DEF(defined in fabfile)  configEth0:server_ip='IP/YOU/WISH/TO/CHANGE/TO'
