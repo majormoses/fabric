@@ -30,7 +30,7 @@ def config_host():
 
 # hosts should be single quoted and comma seperated
 def xen_servers():
-	'''list of all xen servers (ip/dns), 
+	'''list of all xen servers (ip/dns), \n
 	consider only running against one in each pool'''
 	env.user='root'
 	env.hosts=[]
@@ -44,7 +44,7 @@ admin_pass_confirm=''
 
 # pings host and determines if live
 def pingHost(ip):
-	'''This will ping a host let you know results'''
+	'''pings a host let you know results'''
 	response = os.system("ping -c 1 " + ip)
 	if response == 0:
 #		ping is sucess, machine is live
@@ -60,7 +60,7 @@ def pingHost(ip):
 
 # will configure existing servers with ldap client packages/files to authenticate
 def ldapClientConfig():
-	'''installs and configures ldap clients based on template'''
+	'''installs/configures ldap clients based on template'''
 #	installs neccessary packages
 	sudo('DEBCONF_FRONTEND="noninteractive" apt-get install -y libpam-ldap libnss-ldap nss-updatedb libnss-db')
 #	rsync the config files from config_host
@@ -69,7 +69,7 @@ def ldapClientConfig():
 # configures internal server for static IP and dns
 # should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
 def configEth0(server_ip):
-	'''reconfigs eth0 from synamic to static prompting for IP)'''
+	'''reconfigs eth0 from synamic to static)'''
 #	overide defualt user
 #	env.user='root'
 #	get IP of server logged into
@@ -101,7 +101,8 @@ def configEth0(server_ip):
 
 # will rename servers to reflect their real name not using localhost OR ubuntu
 def nameMyServer():
-	'''rename the server based on user input, to keep server named same hit enter when prompted'''
+	'''rename the server based on user input, \n
+	to keep server named same hit enter when prompted'''
 #	get ip of server
 	server_ip = run('ifconfig eth0 | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 #	get old server name
@@ -146,7 +147,8 @@ def syncUserKeys(user_id):
 
 # pushes root ssh keys from SOME_HOST to each host
 def syncRootKeys():
-	'''syncs all of roots ssh keys/authorized_hosts/etc from config_host'''
+	'''syncs all of roots ssh \n
+	keys/authorized_hosts/etc from config_host'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -191,7 +193,8 @@ def syncOpsKeys():
 
 # this is for creating a local admin
 def addLocalAdmin():
-	'''creates a new local admin, the password prompted must be minimum required 
+	'''creates a new local admin, \n
+	the password prompted must be minimum required \n
 	len of standard admin_users default is 20'''
 #	overide default user
 	env.user='root'
@@ -231,7 +234,7 @@ def addLocalAdmin():
 
 # creates backup dirs
 def createBackUpDirs():
-	'''creates the backup dirs on the xen SR with the tag 'backup-sr' '''
+	'''creates backup dirs on xen SR with the tag backup-sr '''
 #	needs root
 	env.user = 'root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -279,10 +282,11 @@ def getListOfVMs():
 
 # function to back uo a single VM
 def backUpVM(uuid, xs_name):
-	'''This backs up a single VM using the follwoing methodology: '\n'
-	1) checks and ejects dvd from vm if neccessary '\n'
-	2) takes snapshot of VM '\n'
-	3) removes any longering copies '\n'
+	'''backs up a single VM with uuid=/UUID/OF/VM and xs_name=/NAME/OF/VM \n
+	using the follwoing methodology: \n
+	1) checks and ejects dvd from vm if neccessary \n
+	2) takes snapshot of VM \n
+	3) removes any longering copies \n
 	4) backup vm from snapshot '\n'
 	5) fixes permissions '\n'
 	6) deletes snapshot we created...we are not slobs
@@ -340,7 +344,7 @@ def backUpVM(uuid, xs_name):
 
 # function to backup all vms returned by getOfListofVMs()
 def backUpAllVMs():
-	'''will back up all of the VM's returned by getListofVMs()'''
+	'''will backup VM's returned by getListofVMs()'''
 #	will run as root if using -H xen_servers
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -372,9 +376,10 @@ def backUpAllVMs():
 
 	# rotates backups
 def rotateBackUps():
-	'''This rotates and deletes backups with the following retention policy: '\n'
-	1) compresses all exported vm's (not already compressed...that would be silly) 
-		that are older than 1 day (2days old) '\n'
+	'''This rotates and deletes backups with retention policy: \n
+	1) compresses all exported vm's (not already compressed... \n
+		that would be silly) that are older than \n
+		1 day (2days old)
 	2) deletes all backups older than 8 days
 	'''
 	env.user = 'root'
