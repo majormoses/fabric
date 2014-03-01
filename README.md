@@ -16,6 +16,50 @@ When running interactively and in directory you cloned/downloaded to you can run
 
 This should output should contain the list of functions you can run via fabric and will look simialr to:
 
+Available commands:
+
+    addLocalAdmin
+    all_internal_servers
+    auth_host
+    backUpAllVMs
+    backUpVM
+    configEth0
+    createBackUpDirs
+    delLocalAdmin
+    getListOfVMs
+    ldapClientConfig
+    nameMyServer
+    pingHost
+    rotateBackUps
+    syncOpsKeys
+    syncRootKeys
+    syncUserKeys
+    xen_servers
+
 
 To run a function with options try something like: 
-fab -H HOSTNAME/IP/HOST-DEF(defined in fabfile)  configEth0:server_ip='IP/YOU/WISH/TO/CHANGE/TO'
+fab -H HOSTNAME/IP/HOST-DEFINED(defined in fabfile)  function:option='WHAT/YOUR/VARIABLE/SHOULD/EQUAL'
+
+
+Commands
+======
+Available commands(REQUIRED/OPTIONS):
+
+    addLocalAdmin
+    all_internal_servers(DEFINE/IN/FILE)
+    auth_host(DEFINE/IN/FILE)
+    backUpAllVMs
+    backUpVM
+    configEth0(server_ip)
+    createBackUpDirs
+    delLocalAdmin(local_admin)
+    getListOfVMs
+    ldapClientConfig
+    nameMyServer
+    pingHost(ip)
+    rotateBackUps
+    syncOpsKeys
+    syncRootKeys
+    syncUserKeys(user_id)
+    xen_servers
+
