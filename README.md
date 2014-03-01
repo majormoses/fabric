@@ -12,40 +12,49 @@ After Installing the package you can can: git clone git@github.com:majormoses/fa
 
 Usage
 ======
-When running interactively and in directory you cloned/downloaded to you can run fab -l (el not 1). If you are not in the same directory you will need to specify the location of the fabfile via faf -f PATH/TO/FABFILE.py -l (el not 1).
+When running interactively and in directory you cloned/downloaded to you can run fab -l (el not 1). If you are not in the same directory you will need to specify the location of the fabfile via fab -f PATH/TO/FABFILE.py -l (el not 1).
 
-This should output should contain the list of functions you can run via fabric and will look simialr to:
+This should output should contain the list of functions you can run via fabric and will look similar to:
 
+fab -l
 Available commands:
 
-    addLocalAdmin
-    all_internal_servers
-    auth_host
-    backUpAllVMs
-    backUpVM
-    configEth0
-    createBackUpDirs
-    delLocalAdmin
-    getListOfVMs
-    ldapClientConfig
-    nameMyServer
-    pingHost
-    rotateBackUps
-    syncOpsKeys
-    syncRootKeys
-    syncUserKeys
-    xen_servers
+    addLocalAdmin         creates a new local admin,
+    all_internal_servers  array of all internal servers
+    backUpAllVMs          will backup VM's returned by getListofVMs()
+    backUpVM              backs up a single VM with uuid=/UUID/OF/VM and xs_name=/NAME/OF/VM
+    configEth0            reconfigs eth0 from synamic to static)
+    config_host           This is a string with your management server
+    createBackUpDirs      creates backup dirs on xen SR with the tag backup-sr
+    delLocalAdmin         deletes the local_admin specified on command line
+    getListOfVMs          gets a list of all VM's in a xen pool
+    ldapClientConfig      installs/configures ldap clients based on template
+    nameMyServer          rename the server based on user input,
+    pingHost              pings a host let you know results
+    rotateBackUps         rotates and deletes backups with retention policy:
+    syncOpsKeys           syncs user ops SSH keys from config_host
+    syncRootKeys          syncs all of roots ssh
+    syncUserKeys          syncs the user supplied SSH keys from config_host
+    xen_servers           list of all xen servers (ip/dns),
+
+The output is multi line and truncated... to see more useful info try something like:
+
+fab -d backUpVM
+Displaying detailed information for task 'backUpVM':
+
+    backs up a single VM with uuid=/UUID/OF/VM and xs_name=/NAME/OF/VM
+    using the follwoing methodology:
+    	1) checks and ejects dvd from vm if neccessary
+    	2) takes snapshot of VM
+    	3) removes any longering copies
+    	4) backup vm from snapshot
+    	5) fixes permissions
+    	6) deletes snapshot we created...we are not slobs
+    
+    Arguments: uuid, xs_name
+
 
 
 To run a function with options try something like: 
 fab -H HOSTNAME/IP/HOST-DEFINED(defined in fabfile)  function:option='WHAT/YOUR/VARIABLE/SHOULD/EQUAL'
-
-In order to get a better description you can run fab -d FUNCTION/NAME
-
-This will show something like this:
-fab -d pingHost
-Displaying detailed information for task 'pingHost':
-
-    This will ping a host
-    Arguments: ip
 
