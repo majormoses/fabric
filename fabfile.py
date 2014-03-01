@@ -145,15 +145,15 @@ def syncRootKeys():
 
 
 # deletes any local instance of ops user
-def delLocalAdmin():
+def delLocalAdmin(local_admin):
 #	overide default user
 	env.user='root'
 	run('whoami')
 #	checking existance
-	if exists('/home/ops'):
+	if exists('/home/' + local_admin):
 #		blast away
-		run('userdel ops')
-		run('rm -Rf /home/ops')
+		run('userdel ' + local_admin)
+		run('rm -Rf /home/' + local_admin)
 	else:
 		print 'these are not the droids you are looking for, move along...'
 
@@ -192,6 +192,8 @@ def addLocalAdmin():
 			print 'ops exists not creating, will sync ops keys and exit'
 			syncOpsKeys()
 			exit(0)
+#	You should adjust the number below to the len of your admin pass. This is an extra protection
+#	against someone typing this wrong. 
 	while len(admin_pass) >= 20:
 #		defines function passPrompt (lambda) to get a password and a confirm password
 		passPrompt = lambda: (getpass.getpass(), getpass.getpass('Retype password: '))
@@ -223,7 +225,7 @@ def createBackUpDirs():
 	year = datetime.date.today().strftime("%Y")
 	month = datetime.date.today().strftime("%m")
 	day = datetime.date.today().strftime("%d")
-#	get sr uuid
+#	get sr uuid NOTE: create xen tag 'backup-sr' for the SR you want to backup to
 	sr_uuid = run('xe sr-list tags=backup-sr | grep uuid | cut -f2 -d":" | tr -d [:blank:]')
 #	check if dir exists
 	if not exists('/var/run/sr-mount/' + str(sr_uuid) + '/' +  year + '/'  + month +  '-'  + day + '/' ):
