@@ -40,26 +40,4 @@ Available commands:
 To run a function with options try something like: 
 fab -H HOSTNAME/IP/HOST-DEFINED(defined in fabfile)  function:option='WHAT/YOUR/VARIABLE/SHOULD/EQUAL'
 
-
-Commands
-======
-Available commands(REQUIRED/OPTIONS):
-
-    addLocalAdmin
-    all_internal_servers(DEFINE/IN/FILE)
-    auth_host(DEFINE/IN/FILE)
-    backUpAllVMs
-    backUpVM
-    configEth0(server_ip)
-    createBackUpDirs
-    delLocalAdmin(local_admin)
-    getListOfVMs
-    ldapClientConfig
-    nameMyServer
-    pingHost(ip)
-    rotateBackUps
-    syncOpsKeys
-    syncRootKeys
-    syncUserKeys(user_id)
-    xen_servers
-
+In order to get a better description you can run fab -d FUNCTION/NAME
