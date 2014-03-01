@@ -26,7 +26,7 @@ def auth_host():
 	env.hosts=[]
 	env.user='root'
 
-#hosts should be single quoted and comma seperated
+# hosts should be single quoted and comma seperated
 def xen_servers():
 	env.user='root'
 	env.hosts=[]
