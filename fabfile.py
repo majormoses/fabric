@@ -19,17 +19,17 @@ env.user='ops'
 
 # hosts should be single quoted and comma seperated
 def all_internal_servers():
-	env.hosts=['']
+	env.hosts=[]
 
 # centeral config/ldap server
 def auth_host():
-	env.hosts=['']
+	env.hosts=[]
 	env.user='root'
 
-hosts should be single quoted and comma seperated
+#hosts should be single quoted and comma seperated
 def xen_servers():
 	env.user='root'
-	env.hosts=['']
+	env.hosts=[]
 
 # never store pass in text will get later from prompt
 ops_pass=''
