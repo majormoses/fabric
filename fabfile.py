@@ -19,19 +19,25 @@ env.user='ops'
 
 # hosts should be single quoted and comma seperated
 def all_internal_servers():
-	'''array of all internal servers'''
+	'''
+	array of all internal servers
+	'''
 	env.hosts=[]
 
 # centeral config/management/ldap server
 def config_host():
-	'''This is a string with your management server'''
+	'''
+	This is a string with your management server
+	'''
 	env.hosts=''
 	env.user='root'
 
 # hosts should be single quoted and comma seperated
 def xen_servers():
-	'''list of all xen servers (ip/dns), \n
-	consider only running against one in each pool'''
+	'''
+	list of all xen servers (ip/dns),
+	consider only running against one in each pool
+	'''
 	env.user='root'
 	env.hosts=[]
 
@@ -44,7 +50,9 @@ admin_pass_confirm=''
 
 # pings host and determines if live
 def pingHost(ip):
-	'''pings a host let you know results'''
+	'''
+	pings a host let you know results
+	'''
 	response = os.system("ping -c 1 " + ip)
 	if response == 0:
 #		ping is sucess, machine is live
@@ -60,7 +68,9 @@ def pingHost(ip):
 
 # will configure existing servers with ldap client packages/files to authenticate
 def ldapClientConfig():
-	'''installs/configures ldap clients based on template'''
+	'''
+	installs/configures ldap clients based on template
+	'''
 #	installs neccessary packages
 	sudo('DEBCONF_FRONTEND="noninteractive" apt-get install -y libpam-ldap libnss-ldap nss-updatedb libnss-db')
 #	rsync the config files from config_host
@@ -101,8 +111,10 @@ def configEth0(server_ip):
 
 # will rename servers to reflect their real name not using localhost OR ubuntu
 def nameMyServer():
-	'''rename the server based on user input, \n
-	to keep server named same hit enter when prompted'''
+	'''
+	rename the server based on user input,
+	to keep server named same hit enter when prompted
+	'''
 #	get ip of server
 	server_ip = run('ifconfig eth0 | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 #	get old server name
@@ -131,7 +143,9 @@ def nameMyServer():
 # adds a users authorized key to each system / Needs to have pushed to config_host manually
 # should be run like this: fab -f fab.py syncUserKeys:user_id='useryouwishtosync'
 def syncUserKeys(user_id):
-	'''syncs the user supplied SSH keys from config_host'''
+	'''
+	syncs the user supplied SSH keys from config_host
+	'''
 #	get username
 	env.user=user_id
 	run('whoami')
@@ -147,8 +161,10 @@ def syncUserKeys(user_id):
 
 # pushes root ssh keys from SOME_HOST to each host
 def syncRootKeys():
-	'''syncs all of roots ssh \n
-	keys/authorized_hosts/etc from config_host'''
+	'''
+	syncs all of roots ssh
+	keys/authorized_hosts/etc from config_host
+	'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -158,7 +174,9 @@ def syncRootKeys():
 
 # deletes any local instance of ops user
 def delLocalAdmin(local_admin):
-	'''deletes the local_admin specified on command line'''
+	'''
+	deletes the local_admin specified on command line
+	'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -173,7 +191,9 @@ def delLocalAdmin(local_admin):
 
 # pushes keys from ops@config_host to each machine
 def syncOpsKeys():
-	'''syncs user ops SSH keys from config_host'''
+	'''
+	syncs user ops SSH keys from config_host
+	'''
 	run('whoami')
 #	confirm that homedir and ssh do not exist
 	if not exists('/home/ops/.ssh/'):
@@ -193,9 +213,11 @@ def syncOpsKeys():
 
 # this is for creating a local admin
 def addLocalAdmin():
-	'''creates a new local admin, \n
-	the password prompted must be minimum required \n
-	len of standard admin_users default is 20'''
+	'''
+	creates a new local admin,
+	the password prompted must be minimum required
+	len of standard admin_users default is 20
+	'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -234,7 +256,9 @@ def addLocalAdmin():
 
 # creates backup dirs
 def createBackUpDirs():
-	'''creates backup dirs on xen SR with the tag backup-sr '''
+	'''
+	creates backup dirs on xen SR with the tag backup-sr
+	'''
 #	needs root
 	env.user = 'root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -257,7 +281,9 @@ def createBackUpDirs():
 
 # function gets list of VM's
 def getListOfVMs():
-	'''gets a list of all VM's in a xen pool'''
+	'''
+	gets a list of all VM's in a xen pool
+	'''
 #	need to run as root
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -282,14 +308,15 @@ def getListOfVMs():
 
 # function to back uo a single VM
 def backUpVM(uuid, xs_name):
-	'''backs up a single VM with uuid=/UUID/OF/VM and xs_name=/NAME/OF/VM \n
-	using the follwoing methodology: \n
-	1) checks and ejects dvd from vm if neccessary \n
-	2) takes snapshot of VM \n
-	3) removes any longering copies \n
-	4) backup vm from snapshot '\n'
-	5) fixes permissions '\n'
-	6) deletes snapshot we created...we are not slobs
+	'''
+	backs up a single VM with uuid=/UUID/OF/VM and xs_name=/NAME/OF/VM
+	using the follwoing methodology:
+		1) checks and ejects dvd from vm if neccessary
+		2) takes snapshot of VM
+		3) removes any longering copies
+		4) backup vm from snapshot
+		5) fixes permissions
+		6) deletes snapshot we created...we are not slob
 	'''
 #	need to run as root
 	env.user='root'
@@ -344,7 +371,9 @@ def backUpVM(uuid, xs_name):
 
 # function to backup all vms returned by getOfListofVMs()
 def backUpAllVMs():
-	'''will backup VM's returned by getListofVMs()'''
+	'''
+	will backup VM's returned by getListofVMs()
+	'''
 #	will run as root if using -H xen_servers
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -376,11 +405,12 @@ def backUpAllVMs():
 
 	# rotates backups
 def rotateBackUps():
-	'''This rotates and deletes backups with retention policy: \n
-	1) compresses all exported vm's (not already compressed... \n
-		that would be silly) that are older than \n
-		1 day (2days old)
-	2) deletes all backups older than 8 days
+	'''
+	rotates and deletes backups with retention policy:
+		1) compresses all exported vm's (not already 
+			compressed...that would be silly) 
+			that are older than 1 day (2days old)
+		2) deletes all backups older than 8 days
 	'''
 	env.user = 'root'
 #	gets the sr
