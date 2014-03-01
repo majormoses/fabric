@@ -19,18 +19,19 @@ env.user='ops'
 
 # hosts should be single quoted and comma seperated
 def all_internal_servers():
-	'''This is a list of all internal servers so you can refer to all servers to refer to them'''
+	'''array of all internal servers'''
 	env.hosts=[]
 
-# centeral config/ldap server
-def auth_host():
-	'''This is a string with you auth(ldap) or centeral config server so you can refer it'''
+# centeral config/management/ldap server
+def config_host():
+	'''This is a string with your management server'''
 	env.hosts=''
 	env.user='root'
 
 # hosts should be single quoted and comma seperated
 def xen_servers():
-	'''This is a list of all xen servers (ip/dns) might wish to only put master of each pool so you can refer to them'''
+	'''list of all xen servers (ip/dns), 
+	consider only running against one in each pool'''
 	env.user='root'
 	env.hosts=[]
 
@@ -59,28 +60,28 @@ def pingHost(ip):
 
 # will configure existing servers with ldap client packages/files to authenticate
 def ldapClientConfig():
-	'''This installs clientside ldap packages and configures them based on preset configs located on auth_host'''
+	'''installs and configures ldap clients based on template'''
 #	installs neccessary packages
 	sudo('DEBCONF_FRONTEND="noninteractive" apt-get install -y libpam-ldap libnss-ldap nss-updatedb libnss-db')
-#	rsync the config files from auth
-	sudo('rsync -arvP root@' + auth_host + ':/home/ops/shared-etc/ldap-client-files/etc/ /etc/')
+#	rsync the config files from config_host
+	sudo('rsync -arvP root@' + config_host + ':/home/ops/shared-etc/ldap-client-files/etc/ /etc/')
 
 # configures internal server for static IP and dns
 # should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
 def configEth0(server_ip):
-	'''This will change the config of eth0 drom synamic to static prompting for IP)'''
+	'''reconfigs eth0 from synamic to static prompting for IP)'''
 #	overide defualt user
 #	env.user='root'
 #	get IP of server logged into
 	oldIP = run('ifconfig eth0 | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 	run('whoami')
 #	rsync the template file
-	sudo('rsync -arvP root@' + auth_hosts + ':/home/ops/shared-etc/network/interfaces /etc/network/interfaces')
+	sudo('rsync -arvP root@' + config_hosts + ':/home/ops/shared-etc/network/interfaces /etc/network/interfaces')
 #	check if host is alive
 	print 'pinging ',server_ip
 	pingHost(server_ip)
 #	sed to replace IP
-	sudo('sed -i "s|' + auth_host + '|' + server_ip + '|g"'' /etc/network/interfaces')
+	sudo('sed -i "s|' + config_host + '|' + server_ip + '|g"'' /etc/network/interfaces')
 	run('cat /etc/network/interfaces')
 	confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
 #	fail count
@@ -90,7 +91,7 @@ def configEth0(server_ip):
 		fail_count += 1
 		new_ip=raw_input('You fool! your fail count is currently ' + str(fail_count) + '. Input desired ip or I shall taunt you again: ')
 #		running sed with new IP
-		sudo('sed -i "s|' + auth_host + '|' + new_ip + '|g"'' /etc/network/interfaces')
+		sudo('sed -i "s|' + config_host + '|' + new_ip + '|g"'' /etc/network/interfaces')
 		run('cat /etc/network/interfaces')
 #		confirm working?
 		confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
@@ -100,7 +101,7 @@ def configEth0(server_ip):
 
 # will rename servers to reflect their real name not using localhost OR ubuntu
 def nameMyServer():
-	'''This will name the server based on user input, to keep server named same hit enter when prompted'''
+	'''rename the server based on user input, to keep server named same hit enter when prompted'''
 #	get ip of server
 	server_ip = run('ifconfig eth0 | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 #	get old server name
@@ -126,10 +127,10 @@ def nameMyServer():
 			sudo('hostname ' + server_name)
 
 
-# adds a users authorized key to each system / Needs to have pushed to auth manually
+# adds a users authorized key to each system / Needs to have pushed to config_host manually
 # should be run like this: fab -f fab.py syncUserKeys:user_id='useryouwishtosync'
 def syncUserKeys(user_id):
-	'''This will sync the user supplied SSH keys from auth_host'''
+	'''syncs the user supplied SSH keys from config_host'''
 #	get username
 	env.user=user_id
 	run('whoami')
@@ -137,7 +138,7 @@ def syncUserKeys(user_id):
 	if not exists('/home/'+ user_id + '/.ssh'):
 		run('echo need to create homedir')
 #		rsync the homedir ignoring host keys
-		run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ' + auth_host + ':~/ /home/' + user_id + '/')
+		run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ' + config_host + ':~/ /home/' + user_id + '/')
 	else:
 #		already exists
 		run('echo homedir and ssh already set up')
@@ -145,17 +146,17 @@ def syncUserKeys(user_id):
 
 # pushes root ssh keys from SOME_HOST to each host
 def syncRootKeys():
-	'''This will sync all of roots ssh keys/authorized_hosts/etc from auth_host'''
+	'''syncs all of roots ssh keys/authorized_hosts/etc from config_host'''
 #	overide default user
 	env.user='root'
 	run('whoami')
-# rsyncs roots ssh keys from auth
-	run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" root@' + auth_host + ':~/.ssh/ ~/.ssh/')
+# rsyncs roots ssh keys from condfig_host
+	run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" root@' + config_host + ':~/.ssh/ ~/.ssh/')
 
 
 # deletes any local instance of ops user
 def delLocalAdmin(local_admin):
-	'''This deletes the local_admin specified on command line'''
+	'''deletes the local_admin specified on command line'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -168,9 +169,9 @@ def delLocalAdmin(local_admin):
 		print 'these are not the droids you are looking for, move along...'
 
 
-# pushes keys from ops@auth_host to each machine
+# pushes keys from ops@config_host to each machine
 def syncOpsKeys():
-	'''This syncs user ops SSH keys from auth_host'''
+	'''syncs user ops SSH keys from config_host'''
 	run('whoami')
 #	confirm that homedir and ssh do not exist
 	if not exists('/home/ops/.ssh/'):
@@ -179,7 +180,7 @@ def syncOpsKeys():
 	else:
 		print 'these are not the droids you are looking for, move along...'
 #	rsync the .ssh dir / Ignores host keys
-	sudo('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ops@' + auth_host + ':/home/ops/.ssh/ /home/ops/.ssh/')
+	sudo('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ops@' + config_host + ':/home/ops/.ssh/ /home/ops/.ssh/')
 #	ensuring that perms/ownership is correct
 	sudo('chown -R ops:ops /home/ops')
 	sudo('chmod 700 /home/ops/.ssh/')
@@ -190,7 +191,7 @@ def syncOpsKeys():
 
 # this is for creating a local admin
 def addLocalAdmin():
-	'''This creates a new local admin, the password prompted must be minimum required 
+	'''creates a new local admin, the password prompted must be minimum required 
 	len of standard admin_users default is 20'''
 #	overide default user
 	env.user='root'
@@ -230,7 +231,7 @@ def addLocalAdmin():
 
 # creates backup dirs
 def createBackUpDirs():
-	'''This creates the backup directories on the xen storage repository with the tag 'backup-sr' '''
+	'''creates the backup dirs on the xen SR with the tag 'backup-sr' '''
 #	needs root
 	env.user = 'root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -253,7 +254,7 @@ def createBackUpDirs():
 
 # function gets list of VM's
 def getListOfVMs():
-	'''This gets a list of all VM's in a xen pool'''
+	'''gets a list of all VM's in a xen pool'''
 #	need to run as root
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -273,17 +274,17 @@ def getListOfVMs():
 	list_of_uuid = run('awk -F":" \'{ print $2 }\' list-vms-backup.txt > list-vm-uuids-backup.txt')
 	list_of_names = run('awk -F":" \'{ print $1 }\' list-vms-backup.txt > list-vm-names-backup.txt')
 #	list_of_names = run('awk -F":" \'{ print $1 }\' list-vms-backup.txt | tr -d [:blank:] > list-vm-names-backup.txt')
-	run('rsync -arvP list-*.* root@' + auth_host + ':/xs-backup-lists/' + xs + '/' )
+	run('rsync -arvP list-*.* root@' + config_host + ':/xs-backup-lists/' + xs + '/' )
 
 
 # function to back uo a single VM
 def backUpVM(uuid, xs_name):
-	'''This backs up a single VM using the follwoing methodology: 
-	1) checks and ejects dvd from vm if neccessary 
-	2) takes snapshot of VM
-	3) removes any longering copies
-	4) backup vm from snapshot
-	5) fixes permissions
+	'''This backs up a single VM using the follwoing methodology: '\n'
+	1) checks and ejects dvd from vm if neccessary '\n'
+	2) takes snapshot of VM '\n'
+	3) removes any longering copies '\n'
+	4) backup vm from snapshot '\n'
+	5) fixes permissions '\n'
 	6) deletes snapshot we created...we are not slobs
 	'''
 #	need to run as root
@@ -339,7 +340,7 @@ def backUpVM(uuid, xs_name):
 
 # function to backup all vms returned by getOfListofVMs()
 def backUpAllVMs():
-	'''This is will back up all of the VM's returned by getListofVMs()'''
+	'''will back up all of the VM's returned by getListofVMs()'''
 #	will run as root if using -H xen_servers
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -371,9 +372,9 @@ def backUpAllVMs():
 
 	# rotates backups
 def rotateBackUps():
-	'''This rotates and deletes backups with the following retention policy:
-	1) compresses all exported vm's (not already compressed...that would be silly) that are 
-		older than 1 day (2days old)
+	'''This rotates and deletes backups with the following retention policy: '\n'
+	1) compresses all exported vm's (not already compressed...that would be silly) 
+		that are older than 1 day (2days old) '\n'
 	2) deletes all backups older than 8 days
 	'''
 	env.user = 'root'
