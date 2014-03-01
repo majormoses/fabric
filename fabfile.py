@@ -19,15 +19,18 @@ env.user='ops'
 
 # hosts should be single quoted and comma seperated
 def all_internal_servers():
+	'''This is a list of all internal servers so you can refer to all servers to refer to them'''
 	env.hosts=[]
 
 # centeral config/ldap server
 def auth_host():
-	env.hosts=[]
+	'''This is a string with you auth(ldap) or centeral config server so you can refer it'''
+	env.hosts=''
 	env.user='root'
 
 # hosts should be single quoted and comma seperated
 def xen_servers():
+	'''This is a list of all xen servers (ip/dns) might wish to only put master of each pool so you can refer to them'''
 	env.user='root'
 	env.hosts=[]
 
@@ -40,6 +43,7 @@ admin_pass_confirm=''
 
 # pings host and determines if live
 def pingHost(ip):
+	'''This will ping a host let you know results'''
 	response = os.system("ping -c 1 " + ip)
 	if response == 0:
 #		ping is sucess, machine is live
@@ -55,6 +59,7 @@ def pingHost(ip):
 
 # will configure existing servers with ldap client packages/files to authenticate
 def ldapClientConfig():
+	'''This installs clientside ldap packages and configures them based on preset configs located on auth_host'''
 #	installs neccessary packages
 	sudo('DEBCONF_FRONTEND="noninteractive" apt-get install -y libpam-ldap libnss-ldap nss-updatedb libnss-db')
 #	rsync the config files from auth
@@ -63,6 +68,7 @@ def ldapClientConfig():
 # configures internal server for static IP and dns
 # should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
 def configEth0(server_ip):
+	'''This will change the config of eth0 drom synamic to static prompting for IP)'''
 #	overide defualt user
 #	env.user='root'
 #	get IP of server logged into
@@ -94,6 +100,7 @@ def configEth0(server_ip):
 
 # will rename servers to reflect their real name not using localhost OR ubuntu
 def nameMyServer():
+	'''This will name the server based on user input, to keep server named same hit enter when prompted'''
 #	get ip of server
 	server_ip = run('ifconfig eth0 | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 #	get old server name
@@ -122,6 +129,7 @@ def nameMyServer():
 # adds a users authorized key to each system / Needs to have pushed to auth manually
 # should be run like this: fab -f fab.py syncUserKeys:user_id='useryouwishtosync'
 def syncUserKeys(user_id):
+	'''This will sync the user supplied SSH keys from auth_host'''
 #	get username
 	env.user=user_id
 	run('whoami')
@@ -137,6 +145,7 @@ def syncUserKeys(user_id):
 
 # pushes root ssh keys from SOME_HOST to each host
 def syncRootKeys():
+	'''This will sync all of roots ssh keys/authorized_hosts/etc from auth_host'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -146,6 +155,7 @@ def syncRootKeys():
 
 # deletes any local instance of ops user
 def delLocalAdmin(local_admin):
+	'''This deletes the local_admin specified on command line'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -160,6 +170,7 @@ def delLocalAdmin(local_admin):
 
 # pushes keys from ops@auth_host to each machine
 def syncOpsKeys():
+	'''This syncs user ops SSH keys from auth_host'''
 	run('whoami')
 #	confirm that homedir and ssh do not exist
 	if not exists('/home/ops/.ssh/'):
@@ -179,6 +190,8 @@ def syncOpsKeys():
 
 # this is for creating a local admin
 def addLocalAdmin():
+	'''This creates a new local admin, the password prompted must be minimum required 
+	len of standard admin_users default is 20'''
 #	overide default user
 	env.user='root'
 	run('whoami')
@@ -217,6 +230,7 @@ def addLocalAdmin():
 
 # creates backup dirs
 def createBackUpDirs():
+	'''This creates the backup directories on the xen storage repository with the tag 'backup-sr' '''
 #	needs root
 	env.user = 'root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -239,6 +253,7 @@ def createBackUpDirs():
 
 # function gets list of VM's
 def getListOfVMs():
+	'''This gets a list of all VM's in a xen pool'''
 #	need to run as root
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -263,6 +278,14 @@ def getListOfVMs():
 
 # function to back uo a single VM
 def backUpVM(uuid, xs_name):
+	'''This backs up a single VM using the follwoing methodology: 
+	1) checks and ejects dvd from vm if neccessary 
+	2) takes snapshot of VM
+	3) removes any longering copies
+	4) backup vm from snapshot
+	5) fixes permissions
+	6) deletes snapshot we created...we are not slobs
+	'''
 #	need to run as root
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -290,24 +313,22 @@ def backUpVM(uuid, xs_name):
 	print 'filename: ', filename
 	print 'running initial snapshot'
 #	this command creates a snapshot
-	backup_vm_cmd = run('xe vm-snapshot uuid=' + uuid + ' new-name-label=' + xs_name + '-' + today)
-	snapshot_uuid = str(commands.getoutput(backup_vm_cmd).replace("sh: 1: ","").replace(": not found",""))
+	snapshot_vm_cmd = run('xe vm-snapshot uuid=' + uuid + ' new-name-label=' + xs_name + '-' + today)
+	snapshot_uuid = str(commands.getoutput(snapshot_vm_cmd).replace("sh: 1: ","").replace(": not found",""))
 	print 'done creating snapshot: ', snapshot_uuid
 #	this command sets HA to NAY for template
 	print 'setting template for HA to NAY'
 	backup_vm_cmd = 'xe template-param-set is-a-template=false ha-always-run=false uuid=' + snapshot_uuid
 	commands.getoutput(backup_vm_cmd)
-	print 'done creating template'
-#	this exports the template we created as a cloned
-	print 'exports template to a cloned vm'
-	print 'checking if ' + filename + 'exists'
+	print 'done setting template options'
 #	delete any lingering copies
+	print 'checking if ' + filename + 'exists'
 	run('rm -f ' + filename)
-#	back up the vm
+#	this exports the snapshot we created as a vm
 	backup_vm_cmd = run('xe vm-export vm=' + snapshot_uuid + ' filename=' + filename)
 	commands.getoutput(backup_vm_cmd)
 	print 'done creating clone'
-	run('chmod 660 '+filename)
+	run('chmod 660 ' + filename)
 	etime = time.time()
 	ttime = (etime - stime)
 	run('echo ' + filename + '-'  + str(ttime) + ' >> ' + sr_base + '/' + sr_uuid + '/' + year + '/' + month + '-' + day + '/backup.log')
@@ -318,6 +339,7 @@ def backUpVM(uuid, xs_name):
 
 # function to backup all vms returned by getOfListofVMs()
 def backUpAllVMs():
+	'''This is will back up all of the VM's returned by getListofVMs()'''
 #	will run as root if using -H xen_servers
 	env.user='root'
 	env.key_filename = "/root/.ssh/id_rsa"
@@ -349,6 +371,11 @@ def backUpAllVMs():
 
 	# rotates backups
 def rotateBackUps():
+	'''This rotates and deletes backups with the following retention policy:
+	1) compresses all exported vm's (not already compressed...that would be silly) that are 
+		older than 1 day (2days old)
+	2) deletes all backups older than 8 days
+	'''
 	env.user = 'root'
 #	gets the sr
 	sr_base = '/var/run/sr-mount'
@@ -363,7 +390,7 @@ def rotateBackUps():
 	# mtime +1 is GREATER than 1 day.
 	remove_empty_dir = run('find ' + sr_path + '/' + year + '/' + ' -type d -empty -delete')
 	two_days_ago = run('find ' + sr_path + '/' + year + '/' + ' -type f -not -name "*.gz" -mtime +1 -exec gzip {} \;')
-	eight_days_ago = run('find ' + sr_path + '/' + year + '/' + ' -mtime +1 -mtime -8 -delete')
+	eight_days_ago = run('find ' + sr_path + '/' + year + '/' + ' -mtime -8 -delete')
 	remove_empty_dir = run('find ' + sr_path + '/' + year + '/' + ' -type d -empty -delete')
 	print 'today: ', today
 	print 'two days ago: ', two_days_ago
