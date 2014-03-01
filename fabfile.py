@@ -316,7 +316,7 @@ def backUpVM(uuid, xs_name):
 		3) removes any longering copies
 		4) backup vm from snapshot
 		5) fixes permissions
-		6) deletes snapshot we created...we are not slob
+		6) deletes snapshot we created...we are not slobs
 	'''
 #	need to run as root
 	env.user='root'
