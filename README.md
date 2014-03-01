@@ -41,3 +41,11 @@ To run a function with options try something like:
 fab -H HOSTNAME/IP/HOST-DEFINED(defined in fabfile)  function:option='WHAT/YOUR/VARIABLE/SHOULD/EQUAL'
 
 In order to get a better description you can run fab -d FUNCTION/NAME
+
+This will show something like this:
+fab -d pingHost
+Displaying detailed information for task 'pingHost':
+
+    This will ping a host
+    Arguments: ip
+
