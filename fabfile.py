@@ -60,11 +60,15 @@ def dns_restart():
 	'''
 	checks if you have bind9/dnsmasq and restart respective service
 	'''
-	dnsmasq_count=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "dnsmasq" | grep wc -l')
-	dnsmasq_count=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "bind9" | grep wc -l')
-	if dnsmasq_count == 1:
+	dnsmasq_exists=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "dnsmasq" | grep wc -l')
+	bind9_exists=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "bind9" | grep wc -l')
+	resolvconf_exists('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "resolvconf" | grep wc -l'))
+	if dnsmasq_exists == 1:
 		sudo('/etc/init.d/dnsmasq restart')
-	if bind_count == 1:
+	if bind_exists == 1:
+		sudo('/etc/init.d/bind9 restart')
+	if resolvconf_exists == 1:
+		sudo('/etc/init.d/resolvconf restart')
 		sudo('/etc/init.d/bind9 restart')
 	
 # pings host and determines if live
