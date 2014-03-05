@@ -50,9 +50,22 @@ admin_pass_confirm=''
 # kills any zombie processes
 # cleans up processes
 def purgeZombiesWithFire(process):
-	'''cleans up a process. usage: fab -f fabfile.py -H some,hosts purgeZombiesWithFire:process=collectd'''
+	'''
+	cleans up a process. usage: fab -f fabfile.py -H some,hosts purgeZombiesWithFire:process=collectd
+	'''
 	env.user='rightscale'
 	sudo('service ' + process + ' stop; wait 5; pkill -9 ' + process + '; ps aux | grep ' + process + '; service ' + process + ' start; ps aux| grep ' + process + ';')
+
+def dns_restart():
+	'''
+	checks if you have bind9/dnsmasq and restart respective service
+	'''
+	dnsmasq_count=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "dnsmasq" | grep wc -l')
+	dnsmasq_count=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "bind9" | grep wc -l')
+	if dnsmasq_count == 1:
+		sudo('/etc/init.d/dnsmasq restart')
+	if bind_count == 1:
+		sudo('/etc/init.d/bind9 restart')
 	
 # pings host and determines if live
 def pingHost(ip):
