@@ -47,7 +47,13 @@ ops_pass_confirm=''
 admin_pass=''
 admin_pass_confirm=''
 
-
+# kills any zombie processes
+# cleans up processes
+def purgeZombiesWithFire(process):
+	'''cleans up a process. usage: fab -f fabfile.py -H some,hosts purgeZombiesWithFire:process=collectd'''
+	env.user='rightscale'
+	sudo('service ' + process + ' stop; wait 5; pkill -9 ' + process + '; ps aux | grep ' + process + '; service ' + process + ' start; ps aux| grep ' + process + ';')
+	
 # pings host and determines if live
 def pingHost(ip):
 	'''
