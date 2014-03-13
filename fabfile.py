@@ -62,7 +62,7 @@ def dns_restart():
 	'''
 	dnsmasq_exists=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "dnsmasq" | grep wc -l')
 	bind9_exists=run('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "bind9" | grep wc -l')
-	resolvconf_exists('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "resolvconf" | grep wc -l'))
+	resolvconf_exists('dpkg --get-selections | awk \'{ print $1 }\' | grep --line-regexp "resolvconf" | grep wc -l')
 	if dnsmasq_exists == 1:
 		sudo('/etc/init.d/dnsmasq restart')
 	if bind_exists == 1:
@@ -70,11 +70,10 @@ def dns_restart():
 	if resolvconf_exists == 1:
 		sudo('/etc/init.d/resolvconf restart')
 		sudo('/etc/init.d/bind9 restart')
-	
 # pings host and determines if live
 def pingHost(ip):
 	'''
-	pings a host let you know results
+	pings a host let you know results, usage pingHost:ip=ip/dns
 	'''
 	response = os.system("ping -c 1 " + ip)
 	if response == 0:
