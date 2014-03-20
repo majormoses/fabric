@@ -100,12 +100,12 @@ def ldapClientConfig():
 
 # configures internal server for static IP and dns
 # should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
-def configEth0(server_ip):
+def configEthX(server_ip,eth_x):
 	'''reconfigs eth0 from synamic to static)'''
 #	overide defualt user
 #	env.user='root'
 #	get IP of server logged into
-	oldIP = run('ifconfig eth0 | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
+	oldIP = run('ifconfig eth' + eth_x + ' | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 	run('whoami')
 #	rsync the template file
 	sudo('rsync -arvP root@' + config_hosts + ':/home/ops/shared-etc/network/interfaces /etc/network/interfaces')
@@ -211,28 +211,6 @@ def delLocalAdmin(local_admin):
 		print 'these are not the droids you are looking for, move along...'
 
 
-# pushes keys from ops@config_host to each machine
-def syncOpsKeys():
-	'''
-	syncs user ops SSH keys from config_host
-	'''
-	run('whoami')
-#	confirm that homedir and ssh do not exist
-	if not exists('/home/ops/.ssh/'):
-#		create homedir and .ssh dir
-		run('mkdir /home/ops/.ssh')
-	else:
-		print 'these are not the droids you are looking for, move along...'
-#	rsync the .ssh dir / Ignores host keys
-	sudo('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" ops@' + config_host + ':/home/ops/.ssh/ /home/ops/.ssh/')
-#	ensuring that perms/ownership is correct
-	sudo('chown -R ops:ops /home/ops')
-	sudo('chmod 700 /home/ops/.ssh/')
-	sudo('chmod 600 /home/ops/.ssh/id_rsa')
-	sudo('chmod 600 /home/ops/.ssh/id_rsa.pub')
-	sudo('chmod 600 /home/ops/.ssh/authorized_keys')
-
-
 # this is for creating a local admin
 def addLocalAdmin():
 	'''
@@ -248,13 +226,12 @@ def addLocalAdmin():
 #	these are global to ensure they persist after each host is done
 	global admin_pass
 	global admin_pass_confirm
-	if admin_user == 'ops':
-		if exists('/home/ops/'):
-			print 'ops exists not creating, will sync ops keys and exit'
-			syncOpsKeys()
-			exit(0)
+	if exists('/home/' + admin_user):
+		print 'ops exists not creating, will sync ops keys and exit'
+		syncUserKeys(admin_user)
+		exit(0)
 #	You should adjust the number below to the len of your admin pass. This is an extra protection
-#	against someone typing this wrong. 
+#	against someone typing this wrong.
 	while len(admin_pass) >= 20:
 #		defines function passPrompt (lambda) to get a password and a confirm password
 		passPrompt = lambda: (getpass.getpass(), getpass.getpass('Retype password: '))
