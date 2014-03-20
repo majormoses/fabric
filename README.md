@@ -23,7 +23,7 @@ Available commands:
     all_internal_servers  array of all internal servers
     backUpAllVMs          will backup VM's returned by getListofVMs()
     backUpVM              backs up a single VM with uuid=/UUID/OF/VM and xs_name=/NAME/OF/VM
-    configEth0            reconfigs eth0 from synamic to static)
+    configEthX            reconfigs ethX(any interface number) from dynamic to static.
     config_host           This is a string with your management server
     createBackUpDirs      creates backup dirs on xen SR with the tag backup-sr
     delLocalAdmin         deletes the local_admin specified on command line
@@ -32,7 +32,6 @@ Available commands:
     nameMyServer          rename the server based on user input,
     pingHost              pings a host let you know results
     rotateBackUps         rotates and deletes backups with retention policy:
-    syncOpsKeys           syncs user ops SSH keys from config_host
     syncRootKeys          syncs all of roots ssh
     syncUserKeys          syncs the user supplied SSH keys from config_host
     xen_servers           list of all xen servers (ip/dns),
