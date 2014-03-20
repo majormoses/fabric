@@ -312,7 +312,7 @@ def backUpVM(uuid, xs_name):
 	using the follwoing methodology:
 		1) checks and ejects dvd from vm if neccessary
 		2) takes snapshot of VM
-		3) removes any longering copies
+		3) removes any lingering copies
 		4) backup vm from snapshot
 		5) fixes permissions
 		6) deletes snapshot we created...we are not slobs
