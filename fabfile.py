@@ -14,8 +14,13 @@ import time
 import datetime
 
 # global fallback user
-env.user='ops'
-
+env.user='ben'
+# don't brick on servers that are not live
+env.skip_bad_hosts=True
+# turn off silly shell logins, no .bash|.rc|_profile.*
+env.shell="/bin/bash -c"
+# colorize errors
+env.colorize_errors = True
 
 # hosts should be single quoted and comma seperated
 def all_internal_servers():
@@ -56,7 +61,24 @@ def purgeZombiesWithFire(process):
 	env.user='rightscale'
 	sudo('service ' + process + ' stop; wait 5; pkill -9 ' + process + '; ps aux | grep ' + process + '; service ' + process + ' start; ps aux| grep ' + process + ';')
 
-def dns_restart():
+
+def restartService(service, action):
+	'''
+	restarts a service on a deb/ubuntu/centos/rhel system.
+	can work with services regardless of location or mechanism.
+	'''
+	initd='/etc/init.d/'
+	service_location=run('which service')
+	print 'service_location: ',service_location
+	if exists(service_location):
+		print 'using service method'
+		sudo(service + ' ' + action)
+	else:
+		print 'using init.d method'
+		sudo(initd + service + ' ' + action)
+
+
+def dnsRestart():
 	'''
 	checks if you have bind9/dnsmasq and restart respective service
 	'''
@@ -70,22 +92,24 @@ def dns_restart():
 	if resolvconf_exists == 1:
 		sudo('/etc/init.d/resolvconf restart')
 		sudo('/etc/init.d/bind9 restart')
+
 # pings host and determines if live
-def pingHost(ip):
+def pingHost():
 	'''
 	pings a host let you know results, usage pingHost:ip=ip/dns
 	'''
-	response = os.system("ping -c 1 " + ip)
-	if response == 0:
-#		ping is sucess, machine is live
-		print 'there is a live host on this ip address'
-		confirm = raw_input('confirm you wish to proceed [y/n]: ')
-#		retatard proof script (force user to confirm changes)
-		while confirm != 'y':
+	for h in env.hosts:
+		response = os.system("ping -c 1 " + h)
+		if response == 0:
+		#	ping is sucess, machine is live
+			print 'there is a live host on this ip address'
 			confirm = raw_input('confirm you wish to proceed [y/n]: ')
-			print "confirm: ", confirm
-	else:
-		print 'there is no live host on this ip address'
+		#	retatard proof script (force user to confirm changes)
+			while confirm != 'y':
+				confirm = raw_input('confirm you wish to proceed [y/n]: ')
+				print "confirm: ", confirm
+		else:
+			print 'there is no live host on this ip address'
 
 
 # will configure existing servers with ldap client packages/files to authenticate
@@ -96,24 +120,38 @@ def ldapClientConfig():
 #	installs neccessary packages
 	sudo('DEBCONF_FRONTEND="noninteractive" apt-get install -y libpam-ldap libnss-ldap nss-updatedb libnss-db')
 #	rsync the config files from config_host
-	sudo('rsync -arvP root@' + config_host + ':/home/ops/shared-etc/ldap-client-files/etc/ /etc/')
+	sudo('rsync -arvP ' + env.user +'@' + config_host + ':/home/ops/shared-etc/ldap-client-files/etc/ /etc/')
 
 # configures internal server for static IP and dns
 # should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
-def configEthX(server_ip,eth_x):
-	'''reconfigs eth0 from synamic to static)'''
+def configDynIfaceStatic(iface_x):
+	'''
+	reconfigs given iface from dynamic to static, using jinja template
+	'''
 #	overide defualt user
 #	env.user='root'
 #	get IP of server logged into
-	oldIP = run('ifconfig eth' + eth_x + ' | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
+	env.iface_x=iface_x
+	oldIP = run('ifconfig ' + env.iface_x + ' | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
 	run('whoami')
-#	rsync the template file
-	sudo('rsync -arvP root@' + config_hosts + ':/home/ops/shared-etc/network/interfaces /etc/network/interfaces')
+	# set dns_servers to empty array
+	env.dns_servers=[]
+	# getting desired IP
+	env.server_ip=raw_input('please enter desired IP address: if it will remain the same press enter.')
+	if env.server_ip=='':
+		env.server_ip=oldIP
 #	check if host is alive
-	print 'pinging ',server_ip
-	pingHost(server_ip)
-#	sed to replace IP
-	sudo('sed -i "s|' + config_host + '|' + server_ip + '|g"'' /etc/network/interfaces')
+	print 'pinging ', env.server_ip
+	pingHost()
+	# getting gateway, netmask, dns-servers
+	env.gateway = sudo('route -n | head -n 3 | awk \'{print $2}\' | egrep -v "IP|Gateway"')
+	env.netmask = sudo('ifconfig ' + env.iface_x + ' | grep Mask | cut -d: -f4')
+	num_dns=sudo('cat /etc/resolv.conf | grep ^nameserver | awk \'{print $2}\' | wc -l')
+	env.dns_servers=sudo("cat /etc/resolv.conf | grep ^nameserver | awk \'{print $2}\'").splitlines()
+#	modify /etc/network/interfaces
+	source_file = 'templates/interfaces'
+	destination_file='/etc/network/interfaces'
+	upload_template(source_file, destination_file, use_jinja=True, context=env, mode=0644,use_sudo=True)
 	run('cat /etc/network/interfaces')
 	confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
 #	fail count
@@ -121,14 +159,16 @@ def configEthX(server_ip,eth_x):
 #	while you did not confirm network configs are good
 	while confirm != 'y':
 		fail_count += 1
-		new_ip=raw_input('You fool! your fail count is currently ' + str(fail_count) + '. Input desired ip or I shall taunt you again: ')
-#		running sed with new IP
-		sudo('sed -i "s|' + config_host + '|' + new_ip + '|g"'' /etc/network/interfaces')
+		env.server_ip=raw_input('You fool! your fail count is currently ' + str(fail_count) + '. Input desired ip or I shall taunt you again: ')
+		# reupload template with CORRECT ip
+		upload_template(source_file, destination_file, use_jinja=True, context=env, mode=0644,use_sudo=True)
+#		sudo('sed -i "s|' + config_host + '|' + new_ip + '|g"'' /etc/network/interfaces')
 		run('cat /etc/network/interfaces')
 #		confirm working?
 		confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
 	else:
-		sudo('reboot')
+		print 'restarting networking'
+		#		sudo('service networking restart')
 
 
 # will rename servers to reflect their real name not using localhost OR ubuntu
@@ -406,8 +446,8 @@ def backUpAllVMs():
 def rotateBackUps():
 	'''
 	rotates and deletes backups with retention policy:
-		1) compresses all exported vm's (not already 
-			compressed...that would be silly) 
+		1) compresses all exported vm's (not already
+			compressed...that would be silly)
 			that are older than 1 day (2days old)
 		2) deletes all backups older than 8 days
 	'''

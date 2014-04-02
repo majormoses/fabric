@@ -1,0 +1,17 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto {{ iface_x }}
+iface {{ iface_x }} inet static
+	address {{ server_ip }}
+	netmask {{ netmask }}
+	gateway {{ gateway }}
+	{% for server in dns_servers -%}
+	dns-nameservers {{ server }}
+	{% endfor %}
+
