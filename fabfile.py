@@ -113,14 +113,24 @@ def pingHost():
 
 
 # will configure existing servers with ldap client packages/files to authenticate
-def ldapClientConfig():
+def ldapClientConfig(rootbinddn,ldapip):
 	'''
-	installs/configures ldap clients based on template
+	installs/configures ldap clients based on template. rootbinddn should looki like admin.domain.tld
 	'''
 #	installs neccessary packages
 	sudo('DEBCONF_FRONTEND="noninteractive" apt-get install -y libpam-ldap libnss-ldap nss-updatedb libnss-db')
-#	rsync the config files from config_host
-	sudo('rsync -arvP ' + env.user +'@' + config_host + ':/home/ops/shared-etc/ldap-client-files/etc/ /etc/')
+	# setting up vars for ldap.conf template
+	ldapip=ldap_ip
+	env.base_dc=basedc.split('.',3)
+#	uploading templates
+	upload_template('templates/ldap/nsswitch', '/etc/nsswitch', use_jinja=True, context=None, mode=0644,use_sudo=True)
+#	setting base pam.d base
+	pb='/etc/pam.d/'
+	upload_template('templates/ldap/pam.d/common-account', pb +'common-account', use_jinja=True, context=None, mode=0644,use_sudo=True)
+	upload_template('templates/ldap/pam.d/common-auth', pb +'common-auth', use_jinja=True, context=None, mode=0644,use_sudo=True)
+	upload_template('templates/ldap/pam.d/common-password', pb +'common-password', use_jinja=True, context=None, mode=0644,use_sudo=True)
+	upload_template('templates/ldap/pam.d/common-session', pb +'common-session', use_jinja=True, context=None, mode=0644,use_sudo=True)
+	upload_template('templates/ldap/ldap.conf', '/etc/ldap.conf', use_jinja=True, context=env, mode=0644,use_sudo=True)
 
 # configures internal server for static IP and dns
 # should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
@@ -234,7 +244,7 @@ def syncRootKeys():
 	run('rsync -arvP -e "ssh -o StrictHostKeyChecking=no" root@' + config_host + ':~/.ssh/ ~/.ssh/')
 
 
-# deletes any local instance of ops user
+# deletes any local instance of specified user
 def delLocalAdmin(local_admin):
 	'''
 	deletes the local_admin specified on command line
@@ -465,7 +475,7 @@ def rotateBackUps():
 	# mtime +1 is GREATER than 1 day.
 	remove_empty_dir = run('find ' + sr_path + '/' + year + '/' + ' -type d -empty -delete')
 	two_days_ago = run('find ' + sr_path + '/' + year + '/' + ' -type f -not -name "*.gz" -mtime +1 -exec gzip {} \;')
-	eight_days_ago = run('find ' + sr_path + '/' + year + '/' + ' -mtime -8 -delete')
+	eight_days_ago = run('find ' + sr_path + '/' + year + '/' + ' -mtime +8 -delete')
 	remove_empty_dir = run('find ' + sr_path + '/' + year + '/' + ' -type d -empty -delete')
 	print 'today: ', today
 	print 'two days ago: ', two_days_ago
