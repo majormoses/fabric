@@ -132,54 +132,6 @@ def ldapClientConfig(rootbinddn,ldapip):
 	upload_template('templates/ldap/pam.d/common-session', pb +'common-session', use_jinja=True, context=None, mode=0644,use_sudo=True)
 	upload_template('templates/ldap/ldap.conf', '/etc/ldap.conf', use_jinja=True, context=env, mode=0644,use_sudo=True)
 
-# configures internal server for static IP and dns
-# should be run like this: fab -f fab.py -H currentip configEth0:server_ip='desiredip'
-def configDynIfaceStatic(iface_x):
-	'''
-	reconfigs given iface from dynamic to static, using jinja template
-	'''
-#	overide defualt user
-#	env.user='root'
-#	get IP of server logged into
-	env.iface_x=iface_x
-	oldIP = run('ifconfig ' + env.iface_x + ' | grep "inet addr:" | cut -d: -f2 | awk \'{ print $1}\'')
-	run('whoami')
-	# set dns_servers to empty array
-	env.dns_servers=[]
-	# getting desired IP
-	env.server_ip=raw_input('please enter desired IP address: if it will remain the same press enter.')
-	if env.server_ip=='':
-		env.server_ip=oldIP
-#	check if host is alive
-	print 'pinging ', env.server_ip
-	pingHost()
-	# getting gateway, netmask, dns-servers
-	env.gateway = sudo('route -n | head -n 3 | awk \'{print $2}\' | egrep -v "IP|Gateway"')
-	env.netmask = sudo('ifconfig ' + env.iface_x + ' | grep Mask | cut -d: -f4')
-	num_dns=sudo('cat /etc/resolv.conf | grep ^nameserver | awk \'{print $2}\' | wc -l')
-	env.dns_servers=sudo("cat /etc/resolv.conf | grep ^nameserver | awk \'{print $2}\'").splitlines()
-#	modify /etc/network/interfaces
-	source_file = 'templates/interfaces'
-	destination_file='/etc/network/interfaces'
-	upload_template(source_file, destination_file, use_jinja=True, context=env, mode=0644,use_sudo=True)
-	run('cat /etc/network/interfaces')
-	confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
-#	fail count
-	fail_count=0
-#	while you did not confirm network configs are good
-	while confirm != 'y':
-		fail_count += 1
-		env.server_ip=raw_input('You fool! your fail count is currently ' + str(fail_count) + '. Input desired ip or I shall taunt you again: ')
-		# reupload template with CORRECT ip
-		upload_template(source_file, destination_file, use_jinja=True, context=env, mode=0644,use_sudo=True)
-#		sudo('sed -i "s|' + config_host + '|' + new_ip + '|g"'' /etc/network/interfaces')
-		run('cat /etc/network/interfaces')
-#		confirm working?
-		confirm = raw_input('please confirm that ip output of network interfaces is good [y/n]: ')
-	else:
-		print 'restarting networking'
-		#		sudo('service networking restart')
-
 
 # will rename servers to reflect their real name not using localhost OR ubuntu
 def nameMyServer():
