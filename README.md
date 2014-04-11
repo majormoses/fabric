@@ -8,7 +8,7 @@ Instalation
 
 To use this you must install fabric. Please read: http://docs.fabfile.org/en/1.8/installation.html for in depth install instructions. If you are on ubuntu(lucid or later)/debian (jessie or later) you can install it via terminal command: "apt-get install fabric". 
 
-After Installing the package you can can: git clone git@github.com:majormoses/fabric.git or download a zip via: https://github.com/majormoses/fabric/archive/master.zip
+After Installing the package you can can: git clone https://github.com/majormoses/fabric.git or download a zip via: https://github.com/majormoses/fabric/archive/master.zip
 
 Usage
 ======
