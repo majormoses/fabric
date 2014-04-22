@@ -478,7 +478,7 @@ def rotateBackUps():
 	remove_empty_dir = run('find ' + sr_path + '/' + year + '/' + ' -type d -empty -delete')
 	print 'today: ', today
 	print 'two days ago: ', two_days_ago
-	print 'eight days ago: ', eight_days_ago
+	print 'older than eight days old: ', eight_days_ago
 
 
 
